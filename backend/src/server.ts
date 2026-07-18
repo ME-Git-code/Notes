@@ -8,9 +8,20 @@ dotenv.config();
 
 const fastify = Fastify({ logger: true });
 
-// Frontend (localhost:3000) dan so'rov qabul qilish uchun
+// Ruxsat berilgan frontend manzillari (vergul bilan ajratilgan bo'lishi mumkin)
+// Masalan: FRONTEND_URL="http://localhost:3000,https://notes-frontend.onrender.com"
+const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 fastify.register(cors, {
-  origin: "http://localhost:3000",
+  origin: allowedOrigins,
+});
+
+// Render kabi platformalar servisning tirikligini shu manzil orqali tekshiradi
+fastify.get("/", async () => {
+  return { status: "ok", service: "notes-backend" };
 });
 
 // Routelarni ulash

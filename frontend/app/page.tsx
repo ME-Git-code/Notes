@@ -14,9 +14,17 @@ import {
   Sparkles,
   Trash2,
   User,
-  X,
 } from "lucide-react";
 import { NoteCard, Note } from "@/components/NoteCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const SESSION_KEY = "notes-session";
@@ -24,6 +32,7 @@ const SESSION_KEY = "notes-session";
 type SessionUser = {
   id: string;
   email: string;
+  token: string;
 };
 
 type AuthMode = "login" | "register";
@@ -83,6 +92,13 @@ async function readResponseError(response: Response) {
   }
 }
 
+function authHeaders(token: string) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 export default function Home() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -105,19 +121,27 @@ export default function Home() {
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
-  const contentInputRef = useRef<HTMLTextAreaElement | null>(null);
+  // Foydalanuvchi grid/list rejimini o'zi tanlasa, keyingi resize
+  // hodisalari bu tanlovni endi bekor qilmasligi kerak.
+  const userAdjustedLayout = useRef(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(SESSION_KEY);
     if (saved) {
       try {
-        setUser(JSON.parse(saved) as SessionUser);
+        const parsed = JSON.parse(saved) as SessionUser;
+        if (parsed?.token) {
+          setUser(parsed);
+        } else {
+          window.localStorage.removeItem(SESSION_KEY);
+        }
       } catch {
         window.localStorage.removeItem(SESSION_KEY);
       }
     }
 
     const updateLayout = () => {
+      if (userAdjustedLayout.current) return;
       setLayoutMode(window.innerWidth < 1024 ? "list" : "grid");
     };
 
@@ -128,14 +152,19 @@ export default function Home() {
     return () => window.removeEventListener("resize", updateLayout);
   }, []);
 
-  async function fetchNotes(userId: string, currentView: NotesView) {
+  async function fetchNotes(token: string, currentView: NotesView) {
     setLoadingNotes(true);
     setNotesError("");
 
     try {
-      const response = await fetch(
-        `${API_URL}/notes/${userId}?view=${currentView}`
-      );
+      const response = await fetch(`${API_URL}/notes?view=${currentView}`, {
+        headers: authHeaders(token),
+      });
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(await readResponseError(response));
@@ -155,7 +184,7 @@ export default function Home() {
 
   async function refreshNotes() {
     if (!user) return;
-    await fetchNotes(user.id, view);
+    await fetchNotes(user.token, view);
   }
 
   async function handleAuthSubmit() {
@@ -243,9 +272,8 @@ export default function Home() {
         editingId ? `${API_URL}/notes/${editingId}` : `${API_URL}/notes`,
         {
           method: editingId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders(user.token),
           body: JSON.stringify({
-            userId: user.id,
             title: formData.title,
             content: formData.content,
             color: formData.color,
@@ -274,8 +302,7 @@ export default function Home() {
     try {
       const response = await fetch(`${API_URL}/notes/${note.id}/pin`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
+        headers: authHeaders(user.token),
       });
 
       if (!response.ok) {
@@ -296,8 +323,7 @@ export default function Home() {
     try {
       const response = await fetch(`${API_URL}/notes/${note.id}/restore`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
+        headers: authHeaders(user.token),
       });
 
       if (!response.ok) {
@@ -318,8 +344,7 @@ export default function Home() {
     try {
       const response = await fetch(`${API_URL}/notes/${note.id}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
+        headers: authHeaders(user.token),
       });
 
       if (!response.ok && response.status !== 204) {
@@ -340,7 +365,8 @@ export default function Home() {
       return;
     }
 
-    void fetchNotes(user.id, view);
+    void fetchNotes(user.token, view);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, view]);
 
   useEffect(() => {
@@ -367,13 +393,9 @@ export default function Home() {
         return;
       }
 
-      if (event.key === "Escape") {
-        if (composerOpen) {
-          closeComposer();
-        } else {
-          setSearch("");
-          searchInputRef.current?.blur();
-        }
+      if (event.key === "Escape" && !composerOpen) {
+        setSearch("");
+        searchInputRef.current?.blur();
         return;
       }
 
@@ -393,7 +415,8 @@ export default function Home() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [composerOpen, composerSaving, closeComposer, openComposer, saveNote]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [composerOpen, composerSaving]);
 
   const filteredNotes = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -460,7 +483,13 @@ export default function Home() {
                   />
                 </div>
 
-                <div className="mt-6 space-y-4">
+                <form
+                  className="mt-6 space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleAuthSubmit();
+                  }}
+                >
                   <AuthField
                     label="Email"
                     value={authForm.email}
@@ -478,23 +507,22 @@ export default function Home() {
                       setAuthForm((current) => ({ ...current, password: value }))
                     }
                   />
-                </div>
 
-                {authError ? (
-                  <p className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                    {authError}
-                  </p>
-                ) : null}
+                  {authError ? (
+                    <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                      {authError}
+                    </p>
+                  ) : null}
 
-                <button
-                  type="button"
-                  onClick={() => void handleAuthSubmit()}
-                  disabled={authLoading}
-                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FFC107] px-5 py-3.5 text-sm font-semibold text-[#121212] transition hover:bg-[#ffca28] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span>{authMode === "login" ? "Kirish" : "Ro'yxatdan o'tish"}</span>
-                  <LogIn className="h-4 w-4" />
-                </button>
+                  <Button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full py-3.5"
+                  >
+                    <span>{authMode === "login" ? "Kirish" : "Ro'yxatdan o'tish"}</span>
+                    <LogIn className="h-4 w-4" />
+                  </Button>
+                </form>
 
                 <p className="mt-5 text-sm leading-7 text-white/55">
                   Saqlangan sessiya brauzerda qoladi. Keyinroq noteslarni
@@ -541,7 +569,8 @@ export default function Home() {
                   ["pinned", "saralanganlar", Pin],
                   ["trash", "o'chirilganlar", Trash2],
                 ] as const
-              ).map(([key, label, icon: Icon]) => {
+              ).map(([key, label, icon]) => {
+                const Icon = icon;
                 const active = view === key;
 
                 return (
@@ -591,14 +620,15 @@ export default function Home() {
                   </div>
                 ) : null}
               </div>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={logout}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#121212] px-4 py-2.5 text-sm font-medium text-white/75 transition hover:bg-white/5 hover:text-[#E0E0E0]"
+                className="mt-4 w-full"
               >
                 <LogOut className="h-4 w-4" />
                 {!sidebarCollapsed ? "Chiqish" : null}
-              </button>
+              </Button>
             </div>
           </div>
         </aside>
@@ -606,23 +636,27 @@ export default function Home() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b border-white/5 bg-[#121212]/95 backdrop-blur">
             <div className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-6 lg:px-8">
-              <button
+              <Button
                 type="button"
-                onClick={() => setSidebarCollapsed((current) => !current)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#2C2C2C] text-[#E0E0E0] transition hover:bg-white/10"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  userAdjustedLayout.current = true;
+                  setSidebarCollapsed((current) => !current);
+                }}
                 aria-label="Sidebarni kichraytirish"
               >
                 <Menu className="h-5 w-5" />
-              </button>
+              </Button>
 
               <div className="relative min-w-0 flex-1 max-w-2xl">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/45" />
-                <input
+                <Input
                   ref={searchInputRef}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Qidiruv"
-                  className="h-11 w-full rounded-2xl border border-white/8 bg-[#2C2C2C] pl-11 pr-4 text-sm text-[#E0E0E0] outline-none placeholder:text-white/35 focus:border-[#FFA500]/60"
+                  className="h-11 pl-11"
                 />
               </div>
 
@@ -632,12 +666,14 @@ export default function Home() {
                   <span className="capitalize">{viewMeta.label}</span>
                 </div>
 
-                <button
+                <Button
                   type="button"
-                  onClick={() =>
-                    setLayoutMode((current) => (current === "grid" ? "list" : "grid"))
-                  }
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#2C2C2C] text-[#E0E0E0] transition hover:bg-white/10"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    userAdjustedLayout.current = true;
+                    setLayoutMode((current) => (current === "grid" ? "list" : "grid"));
+                  }}
                   aria-label="Layoutni almashtirish"
                 >
                   {layoutMode === "grid" ? (
@@ -645,25 +681,17 @@ export default function Home() {
                   ) : (
                     <LayoutGrid className="h-5 w-5" />
                   )}
-                </button>
+                </Button>
 
-                <button
-                  type="button"
-                  onClick={() => openComposer()}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-[#FFC107] px-5 py-3 text-sm font-semibold text-[#121212] transition hover:bg-[#ffca28]"
-                >
+                <Button type="button" onClick={() => openComposer()}>
                   <Plus className="h-4 w-4" />
                   Yangi yozuv
-                </button>
+                </Button>
 
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="inline-flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-[#121212] px-4 text-sm font-medium text-white/75 transition hover:bg-white/5 hover:text-[#E0E0E0]"
-                >
+                <Button type="button" variant="outline" onClick={logout}>
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">Chiqish</span>
-                </button>
+                </Button>
               </div>
             </div>
           </header>
@@ -733,38 +761,29 @@ export default function Home() {
         </div>
       </div>
 
-      {composerOpen ? (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm"
-          onClick={closeComposer}
-        >
+      <Dialog
+        open={composerOpen}
+        onOpenChange={(open) => {
+          if (!open) closeComposer();
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto p-0">
           <form
-            className="relative w-full max-w-3xl overflow-hidden rounded-[32px] border border-white/10 bg-[#121212] shadow-[0_30px_120px_rgba(0,0,0,0.55)]"
-            onClick={(event) => event.stopPropagation()}
             onSubmit={(event) => {
               event.preventDefault();
               void saveNote();
             }}
           >
-            <div className="flex items-center justify-between border-b border-white/5 px-5 py-4 sm:px-6">
+            <DialogHeader>
               <div>
                 <p className="text-xs uppercase tracking-[0.45em] text-[#FFA500]">
                   Composer
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold text-[#E0E0E0]">
+                <DialogTitle className="mt-2">
                   {editingId ? "Yozuvni tahrirlash" : "Yangi yozuv"}
-                </h2>
+                </DialogTitle>
               </div>
-
-              <button
-                type="button"
-                onClick={closeComposer}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#2C2C2C] text-[#E0E0E0] transition hover:bg-white/10"
-                aria-label="Composerni yopish"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+            </DialogHeader>
 
             <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
               {composerError ? (
@@ -779,7 +798,7 @@ export default function Home() {
                     <span className="mb-2 block text-sm text-white/65">
                       Sarlavha
                     </span>
-                    <input
+                    <Input
                       ref={titleInputRef}
                       value={formData.title}
                       onChange={(event) =>
@@ -789,14 +808,12 @@ export default function Home() {
                         }))
                       }
                       placeholder="Masalan: Kundalik reja"
-                      className="h-12 w-full rounded-2xl border border-white/10 bg-[#2C2C2C] px-4 text-[#E0E0E0] outline-none placeholder:text-white/35 focus:border-[#FFA500]/60"
                     />
                   </label>
 
                   <label className="block">
                     <span className="mb-2 block text-sm text-white/65">Matn</span>
-                    <textarea
-                      ref={contentInputRef}
+                    <Textarea
                       value={formData.content}
                       onChange={(event) =>
                         setFormData((current) => ({
@@ -806,7 +823,6 @@ export default function Home() {
                       }
                       rows={11}
                       placeholder="Yozuvni shu yerga kiriting..."
-                      className="w-full rounded-2xl border border-white/10 bg-[#2C2C2C] px-4 py-3 text-[#E0E0E0] outline-none placeholder:text-white/35 focus:border-[#FFA500]/60"
                     />
                   </label>
                 </div>
@@ -882,29 +898,21 @@ export default function Home() {
               </p>
 
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={closeComposer}
-                  className="rounded-2xl border border-white/10 bg-[#2C2C2C] px-5 py-3 text-sm font-medium text-[#E0E0E0] transition hover:bg-white/10"
-                >
+                <Button type="button" variant="outline" onClick={closeComposer}>
                   Bekor qilish
-                </button>
-                <button
-                  type="submit"
-                  disabled={composerSaving}
-                  className="rounded-2xl bg-[#FFC107] px-5 py-3 text-sm font-semibold text-[#121212] transition hover:bg-[#ffca28] disabled:cursor-not-allowed disabled:opacity-60"
-                >
+                </Button>
+                <Button type="submit" disabled={composerSaving}>
                   {composerSaving
                     ? "Saqlanmoqda..."
                     : editingId
                       ? "Yangilash"
                       : "Saqlash"}
-                </button>
+                </Button>
               </div>
             </div>
           </form>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
@@ -966,12 +974,11 @@ function AuthField({
   return (
     <label className="block">
       <span className="mb-2 block text-sm text-white/65">{label}</span>
-      <input
+      <Input
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-12 w-full rounded-2xl border border-white/10 bg-[#2C2C2C] px-4 text-[#E0E0E0] outline-none placeholder:text-white/35 focus:border-[#FFA500]/60"
       />
     </label>
   );

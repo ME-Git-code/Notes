@@ -1,23 +1,14 @@
 import { FastifyInstance } from "fastify";
 import prisma from "../db";
+import { requireAuth } from "../auth";
 
 type NoteBody = {
   title?: string;
   content?: string;
-  userId?: string;
   color?: string;
-  isPinned?: boolean;
-  isTrashed?: boolean;
 };
 
 type NotesView = "notes" | "pinned" | "trash";
-
-async function verifyUser(userId: string) {
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true },
-  });
-}
 
 async function findOwnedNote(id: string, userId: string) {
   return prisma.note.findFirst({
@@ -38,11 +29,14 @@ function resolveView(view: NotesView) {
 }
 
 export default async function notesRoutes(fastify: FastifyInstance) {
+  // Shu pluginga tegishli barcha routelar tokenni talab qiladi.
+  // userId endi hech qachon clientdan emas, tokendan olinadi.
+  fastify.addHook("preHandler", requireAuth);
+
   fastify.get<{
-    Params: { userId: string };
     Querystring: { view?: NotesView };
-  }>("/notes/:userId", async (request, reply) => {
-    const { userId } = request.params;
+  }>("/notes", async (request, reply) => {
+    const userId = request.userId!;
     const view = request.query.view ?? "notes";
 
     const notes = await prisma.note.findMany({
@@ -56,55 +50,40 @@ export default async function notesRoutes(fastify: FastifyInstance) {
     return reply.send(notes);
   });
 
-  fastify.post<{ Body: Required<Pick<NoteBody, "userId">> & NoteBody }>(
-    "/notes",
-    async (request, reply) => {
-      const { title, content, userId, color } = request.body;
+  fastify.post<{ Body: NoteBody }>("/notes", async (request, reply) => {
+    const userId = request.userId!;
+    const { title, content, color } = request.body ?? {};
 
-      if (!userId?.trim()) {
-        return reply.code(400).send({ error: "userId majburiy" });
-      }
+    const cleanTitle = title?.trim() ?? "";
+    const cleanContent = content?.trim() ?? "";
 
-      const user = await verifyUser(userId);
-      if (!user) {
-        return reply.code(404).send({ error: "Foydalanuvchi topilmadi" });
-      }
-
-      const cleanTitle = title?.trim() ?? "";
-      const cleanContent = content?.trim() ?? "";
-
-      if (!cleanTitle && !cleanContent) {
-        return reply.code(400).send({
-          error: "Hech bo'lmaganda title yoki content kiritish kerak",
-        });
-      }
-
-      const note = await prisma.note.create({
-        data: {
-          title: cleanTitle || cleanContent.slice(0, 40) || "Yangi yozuv",
-          content: cleanContent || cleanTitle || "",
-          userId,
-          color: color || "yellow",
-          isPinned: false,
-          isTrashed: false,
-        },
+    if (!cleanTitle && !cleanContent) {
+      return reply.code(400).send({
+        error: "Hech bo'lmaganda title yoki content kiritish kerak",
       });
-
-      return reply.code(201).send(note);
     }
-  );
+
+    const note = await prisma.note.create({
+      data: {
+        title: cleanTitle || cleanContent.slice(0, 40) || "Yangi yozuv",
+        content: cleanContent || cleanTitle || "",
+        userId,
+        color: color || "yellow",
+        isPinned: false,
+        isTrashed: false,
+      },
+    });
+
+    return reply.code(201).send(note);
+  });
 
   fastify.put<{
     Params: { id: string };
     Body: NoteBody;
   }>("/notes/:id", async (request, reply) => {
+    const userId = request.userId!;
     const { id } = request.params;
-    const { title, content, color, userId, isPinned, isTrashed } =
-      request.body;
-
-    if (!userId?.trim()) {
-      return reply.code(400).send({ error: "userId majburiy" });
-    }
+    const { title, content, color } = request.body ?? {};
 
     const note = await findOwnedNote(id, userId);
     if (!note) {
@@ -117,8 +96,6 @@ export default async function notesRoutes(fastify: FastifyInstance) {
         ...(title !== undefined ? { title: title.trim() } : {}),
         ...(content !== undefined ? { content: content.trim() } : {}),
         ...(color !== undefined ? { color } : {}),
-        ...(isPinned !== undefined ? { isPinned } : {}),
-        ...(isTrashed !== undefined ? { isTrashed } : {}),
       },
     });
 
@@ -127,14 +104,9 @@ export default async function notesRoutes(fastify: FastifyInstance) {
 
   fastify.patch<{
     Params: { id: string };
-    Body: { userId?: string };
   }>("/notes/:id/pin", async (request, reply) => {
+    const userId = request.userId!;
     const { id } = request.params;
-    const { userId } = request.body;
-
-    if (!userId?.trim()) {
-      return reply.code(400).send({ error: "userId majburiy" });
-    }
 
     const note = await findOwnedNote(id, userId);
     if (!note) {
@@ -151,14 +123,9 @@ export default async function notesRoutes(fastify: FastifyInstance) {
 
   fastify.patch<{
     Params: { id: string };
-    Body: { userId?: string };
   }>("/notes/:id/restore", async (request, reply) => {
+    const userId = request.userId!;
     const { id } = request.params;
-    const { userId } = request.body;
-
-    if (!userId?.trim()) {
-      return reply.code(400).send({ error: "userId majburiy" });
-    }
 
     const note = await findOwnedNote(id, userId);
     if (!note) {
@@ -175,14 +142,9 @@ export default async function notesRoutes(fastify: FastifyInstance) {
 
   fastify.delete<{
     Params: { id: string };
-    Body: { userId?: string };
   }>("/notes/:id", async (request, reply) => {
+    const userId = request.userId!;
     const { id } = request.params;
-    const { userId } = request.body;
-
-    if (!userId?.trim()) {
-      return reply.code(400).send({ error: "userId majburiy" });
-    }
 
     const note = await findOwnedNote(id, userId);
     if (!note) {
