@@ -833,10 +833,10 @@ export default function Home() {
               event.preventDefault();
               void saveNote();
             }}
-            className="grid max-h-[94vh] gap-5 overflow-y-auto lg:grid-cols-[1.55fr_0.85fr] lg:overflow-visible lg:items-start"
+            className="grid max-h-[94vh] gap-5 overflow-y-auto lg:grid-cols-[1.55fr_0.85fr] lg:items-start"
           >
             {/* Asosiy karta: sarlavha, matn va amallar */}
-            <div className="flex flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#121212] shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:rounded-[32px] lg:min-h-[560px]">
+            <div className="flex flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#121212] shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:rounded-[32px] lg:min-h-[540px]">
               <div className="flex items-center justify-between border-b border-white/5 px-5 py-4 sm:px-6">
                 <div>
                   <p className="text-xs uppercase tracking-[0.45em] text-[#FFA500]">
