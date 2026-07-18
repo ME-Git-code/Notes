@@ -34,7 +34,7 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("uz-UZ", {
 const COLOR_ALIASES: Record<string, string> = {
   gray: "#BDBDBD",
   yellow: "#FFC107",
-  red: "#FFEBEE",
+  red: "#ff0000",
   blue: "#2196F3",
   dark: "#2C2C2C",
   light: "#E0E0E0",

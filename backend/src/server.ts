@@ -20,6 +20,30 @@ fastify.register(cors, {
   origin: allowedOrigins,
 });
 
+// Frontend ba'zi so'rovlarda (pin, restore, delete) "Content-Type:
+// application/json" sarlavhasini yuboradi, lekin haqiqiy tana (body)
+// bo'lmaydi. Fastify standart holatda buni xato deb hisoblab, 400
+// "Bad Request" qaytarardi — shu yerda bo'sh JSON tanasini xavfsiz
+// qabul qilishni o'rgatamiz.
+fastify.addContentTypeParser(
+  "application/json",
+  { parseAs: "string" },
+  (request, body, done) => {
+    const raw = body as string;
+
+    if (!raw || !raw.trim()) {
+      done(null, undefined);
+      return;
+    }
+
+    try {
+      done(null, JSON.parse(raw));
+    } catch (error) {
+      done(error as Error, undefined);
+    }
+  }
+);
+
 // Umumiy himoya: bitta IP manzil daqiqasiga 100 tadan ortiq so'rov
 // yubora olmaydi. Bu server-darajasidagi DDoS/spam'ning oldini olishga
 // yordam beradi (haqiqiy katta DDoS uchun Cloudflare kabi CDN kerak,
