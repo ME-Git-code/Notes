@@ -800,6 +800,20 @@ export default function Home() {
                 </span>
               </span>
             </div>
+            <div className="mt-2 text-xs text-white/35">
+              <span>
+                Xato va kamchiliklar haqida{" "}
+                <a
+                  href="https://t.me/FreecoderX"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#FFA500] hover:underline"
+                >
+                  Telegram
+                </a>{" "}
+                orqali xabar bering
+              </span>
+            </div>
           </footer>
         </div>
       </div>

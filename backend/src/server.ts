@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import dotenv from "dotenv";
 import notesRoutes from "./routes/notes";
 import authRoutes from "./routes/auth";
@@ -17,6 +18,15 @@ const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:3000")
 
 fastify.register(cors, {
   origin: allowedOrigins,
+});
+
+// Umumiy himoya: bitta IP manzil daqiqasiga 100 tadan ortiq so'rov
+// yubora olmaydi. Bu server-darajasidagi DDoS/spam'ning oldini olishga
+// yordam beradi (haqiqiy katta DDoS uchun Cloudflare kabi CDN kerak,
+// lekin bu ilova darajasidagi birinchi himoya qatlami).
+fastify.register(rateLimit, {
+  max: 100,
+  timeWindow: "1 minute",
 });
 
 // Render kabi platformalar servisning tirikligini shu manzil orqali tekshiradi

@@ -12,6 +12,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // 1. Ro'yxatdan o'tish
   fastify.post<{ Body: { email: string; password: string } }>(
     "/auth/register",
+    {
+      // Ro'yxatdan o'tishga ham chegara: bitta IP 1 daqiqada 5 marta
+      // urinishi mumkin — bu ommaviy soxta akkaunt yaratishning oldini oladi.
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request, reply) => {
       const email = normalizeEmail(request.body?.email ?? "");
       const password = request.body?.password ?? "";
@@ -46,6 +56,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // 2. Kirish
   fastify.post<{ Body: { email: string; password: string } }>(
     "/auth/login",
+    {
+      // Login'ga qattiqroq chegara: bitta IP 1 daqiqada faqat 10 marta
+      // urinishi mumkin. Shu orqali parolni "taxmin qilish" (brute-force)
+      // hujumi amalda foydasiz bo'lib qoladi.
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request, reply) => {
       const email = normalizeEmail(request.body?.email ?? "");
       const password = request.body?.password ?? "";
