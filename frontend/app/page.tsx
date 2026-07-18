@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Eye,
+  EyeOff,
   LayoutGrid,
   LayoutList,
   LogIn,
@@ -432,106 +434,94 @@ export default function Home() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-[#0f0f0f] px-4 py-8 text-[#E0E0E0] sm:px-6 lg:px-8">
-        <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center justify-center">
-          <section className="grid w-full gap-6 overflow-hidden rounded-[32px] border border-white/10 bg-[#121212] shadow-[0_30px_90px_rgba(0,0,0,0.45)] lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="border-b border-white/5 p-8 sm:p-10 lg:border-b-0 lg:border-r">
-              <p className="text-xs uppercase tracking-[0.5em] text-[#FFA500]">
-                Notes workspace
-              </p>
-              <h1 className="mt-5 max-w-xl text-4xl font-semibold tracking-tight text-[#E0E0E0] sm:text-5xl">
-                Google Keep uslubidagi tezkor va yengil notes ilovasi
-              </h1>
-              <p className="mt-5 max-w-xl text-base leading-8 text-white/65">
-                Kirish yoki ro'yxatdan o'ting, keyin yozuvlarni ranglar bilan
-                saqlang, pin qiling, trashga yuboring va qayta tiklang.
-              </p>
+      <main className="flex min-h-screen items-center justify-center bg-[#0f0f0f] px-4 py-8 text-[#E0E0E0] sm:px-6">
+        <section className="grid w-full max-w-5xl gap-0 overflow-hidden rounded-[32px] border border-white/10 bg-[#121212] shadow-[0_30px_90px_rgba(0,0,0,0.45)] lg:grid-cols-2">
+          <div className="flex flex-col justify-center border-b border-white/5 p-8 sm:p-10 lg:border-b-0 lg:border-r">
+            <NoteStack />
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <InfoChip label="Saqlash" value="PostgreSQL + Prisma" />
-                <InfoChip label="Backend" value="Fastify API" />
-                <InfoChip label="Frontend" value="Next.js + shadcn" />
+            <h1 className="mt-8 text-3xl font-semibold leading-tight tracking-tight text-[#E0E0E0] sm:text-4xl">
+              Tezkor va yengil notes ilovasi
+            </h1>
+
+            <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/60">
+              <li>Tahrirlash</li>
+              <li>Saqlash</li>
+              <li>Ishonchlilik</li>
+            </ul>
+          </div>
+
+          <div className="p-8 sm:p-10">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#FFA500] text-[#121212]">
+                <LogIn className="h-5 w-5" />
               </div>
-            </div>
-
-            <div className="p-6 sm:p-8">
-              <div className="rounded-[28px] border border-white/10 bg-[#0f0f0f] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFA500] text-[#121212]">
-                    <LogIn className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-[#FFA500]/80">
-                      Access
-                    </p>
-                    <h2 className="mt-1 text-2xl font-semibold text-[#E0E0E0]">
-                      Hisobga kirish
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex rounded-full border border-white/10 bg-[#121212] p-1">
-                  <AuthToggle
-                    active={authMode === "login"}
-                    label="Kirish"
-                    onClick={() => setAuthMode("login")}
-                  />
-                  <AuthToggle
-                    active={authMode === "register"}
-                    label="Ro'yxat"
-                    onClick={() => setAuthMode("register")}
-                  />
-                </div>
-
-                <form
-                  className="mt-6 space-y-4"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void handleAuthSubmit();
-                  }}
-                >
-                  <AuthField
-                    label="Email"
-                    value={authForm.email}
-                    placeholder="user@example.com"
-                    onChange={(value) =>
-                      setAuthForm((current) => ({ ...current, email: value }))
-                    }
-                  />
-                  <AuthField
-                    label="Parol"
-                    value={authForm.password}
-                    placeholder="••••••••"
-                    type="password"
-                    onChange={(value) =>
-                      setAuthForm((current) => ({ ...current, password: value }))
-                    }
-                  />
-
-                  {authError ? (
-                    <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                      {authError}
-                    </p>
-                  ) : null}
-
-                  <Button
-                    type="submit"
-                    disabled={authLoading}
-                    className="w-full py-3.5"
-                  >
-                    <span>{authMode === "login" ? "Kirish" : "Ro'yxatdan o'tish"}</span>
-                    <LogIn className="h-4 w-4" />
-                  </Button>
-                </form>
-
-                <p className="mt-5 text-sm leading-7 text-white/55">
-                  Saqlangan sessiya brauzerda qoladi. Keyinroq noteslarni
-                  to'liq ochib tahrirlash, pinlash va trashdan tiklash mumkin.
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[#FFA500]/80">
+                  Access
                 </p>
+                <h2 className="text-2xl font-semibold text-[#E0E0E0]">
+                  Tizimga kirish
+                </h2>
               </div>
             </div>
-          </section>
-        </div>
+
+            <div className="mt-6 flex rounded-full border border-white/10 bg-[#0f0f0f] p-1">
+              <AuthToggle
+                active={authMode === "login"}
+                label="Tizimga kirish"
+                onClick={() => setAuthMode("login")}
+              />
+              <AuthToggle
+                active={authMode === "register"}
+                label="Ro'yxatdan o'tish"
+                onClick={() => setAuthMode("register")}
+              />
+            </div>
+
+            <form
+              className="mt-6 space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleAuthSubmit();
+              }}
+            >
+              <AuthField
+                label="Elektron pochta manzili"
+                value={authForm.email}
+                placeholder="user@example.com"
+                onChange={(value) =>
+                  setAuthForm((current) => ({ ...current, email: value }))
+                }
+              />
+              <AuthField
+                label="Maxfiy parol"
+                value={authForm.password}
+                placeholder="••••••••"
+                type="password"
+                onChange={(value) =>
+                  setAuthForm((current) => ({ ...current, password: value }))
+                }
+              />
+
+              {authError ? (
+                <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {authError}
+                </p>
+              ) : null}
+
+              <Button
+                type="submit"
+                disabled={authLoading}
+                className="w-full py-3.5"
+              >
+                <span>
+                  {authMode === "login" ? "Tizimga kirish" : "Ro'yxatdan o'tish"}
+                </span>
+                <LogIn className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
+        </section>
       </main>
     );
   }
@@ -645,6 +635,7 @@ export default function Home() {
                   setSidebarCollapsed((current) => !current);
                 }}
                 aria-label="Sidebarni kichraytirish"
+                className="hidden lg:inline-flex"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -660,8 +651,8 @@ export default function Home() {
                 />
               </div>
 
-              <div className="order-3 flex w-full items-center gap-3 sm:order-none sm:w-auto">
-                <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0f0f0f] px-4 py-2 text-sm text-[#FFA500]">
+              <div className="order-3 flex w-full flex-wrap items-center gap-3 sm:order-none sm:w-auto">
+                <div className="hidden items-center gap-2 rounded-2xl border border-white/10 bg-[#0f0f0f] px-4 py-2 text-sm text-[#FFA500] lg:inline-flex">
                   <ViewIcon className="h-4 w-4" />
                   <span className="capitalize">{viewMeta.label}</span>
                 </div>
@@ -688,11 +679,47 @@ export default function Home() {
                   Yangi yozuv
                 </Button>
 
-                <Button type="button" variant="outline" onClick={logout}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={logout}
+                  aria-label="Chiqish"
+                >
                   <LogOut className="h-4 w-4" />
                   <span className="hidden sm:inline">Chiqish</span>
                 </Button>
               </div>
+            </div>
+
+            {/* Mobil uchun: sidebar kichik ekranlarda yashirin bo'lgani sababli,
+                notes/pinned/trash orasida almashish uchun alohida tab qatori */}
+            <div className="flex items-center gap-2 overflow-x-auto px-4 pb-4 sm:px-6 lg:hidden">
+              {(
+                [
+                  ["notes", "Yozuvlar", Sparkles],
+                  ["pinned", "Saralanganlar", Pin],
+                  ["trash", "O'chirilganlar", Trash2],
+                ] as const
+              ).map(([key, label, icon]) => {
+                const Icon = icon;
+                const active = view === key;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setView(key)}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+                      active
+                        ? "bg-[#FFA500] text-[#121212]"
+                        : "border border-white/10 bg-[#0f0f0f] text-white/60"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </header>
 
@@ -917,19 +944,39 @@ export default function Home() {
   );
 }
 
-function InfoChip({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function NoteStack() {
+  // Sof CSS bilan yasalgan "qog'oz notes" tasviri - tashqi rasm fayliga
+  // bog'liq bo'lmasligi uchun.
+  const cards = [
+    { rotate: -8, offset: 10, dim: false },
+    { rotate: 5, offset: 4, dim: true },
+    { rotate: -2, offset: 0, dim: false },
+  ];
+
   return (
-    <div className="rounded-[22px] border border-white/10 bg-[#0f0f0f] p-4">
-      <p className="text-xs uppercase tracking-[0.35em] text-white/35">
-        {label}
-      </p>
-      <p className="mt-3 text-sm font-medium text-[#E0E0E0]">{value}</p>
+    <div className="relative h-28 w-40 sm:h-32 sm:w-44" aria-hidden="true">
+      {cards.map((card, index) => (
+        <div
+          key={index}
+          className="absolute inset-0 rounded-2xl border p-3"
+          style={{
+            transform: `rotate(${card.rotate}deg) translateY(${card.offset}px)`,
+            backgroundColor: card.dim ? "#2C2C2C" : "#E9E4D8",
+            borderColor: "rgba(0,0,0,0.15)",
+            zIndex: cards.length - index,
+          }}
+        >
+          <div
+            className="h-1.5 w-3/4 rounded-full"
+            style={{ backgroundColor: card.dim ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.2)" }}
+          />
+          <div
+            className="mt-2 h-1.5 w-1/2 rounded-full"
+            style={{ backgroundColor: card.dim ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.14)" }}
+          />
+        </div>
+      ))}
+      <Sparkles className="absolute -bottom-2 -right-2 h-5 w-5 text-[#FFA500]" />
     </div>
   );
 }
@@ -971,15 +1018,35 @@ function AuthField({
   placeholder: string;
   type?: string;
 }) {
+  const [visible, setVisible] = useState(false);
+  const isPassword = type === "password";
+
   return (
     <label className="block">
       <span className="mb-2 block text-sm text-white/65">{label}</span>
-      <Input
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-      />
+      <div className="relative">
+        <Input
+          type={isPassword && visible ? "text" : type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className={isPassword ? "pr-11" : undefined}
+        />
+        {isPassword ? (
+          <button
+            type="button"
+            onClick={() => setVisible((current) => !current)}
+            aria-label={visible ? "Parolni yashirish" : "Parolni ko'rsatish"}
+            className="absolute right-1 top-1/2 -translate-y-1/2 rounded-xl p-2 text-white/45 transition hover:text-white/80"
+          >
+            {visible ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        ) : null}
+      </div>
     </label>
   );
 }
