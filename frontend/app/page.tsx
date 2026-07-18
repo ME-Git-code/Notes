@@ -123,6 +123,7 @@ export default function Home() {
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const contentInputRef = useRef<HTMLTextAreaElement | null>(null);
   // Foydalanuvchi grid/list rejimini o'zi tanlasa, keyingi resize
   // hodisalari bu tanlovni endi bekor qilmasligi kerak.
   const userAdjustedLayout = useRef(false);
@@ -375,7 +376,7 @@ export default function Home() {
     if (!composerOpen) return;
 
     const timeout = window.setTimeout(() => {
-      titleInputRef.current?.focus();
+      contentInputRef.current?.focus();
     }, 0);
 
     return () => window.clearTimeout(timeout);
@@ -724,25 +725,16 @@ export default function Home() {
           </header>
 
           <section className="flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.45em] text-[#FFA500]">
-                  Workspace
-                </p>
-                <h1 className="mt-3 text-4xl font-semibold tracking-tight text-[#E0E0E0]">
-                  {viewMeta.label}
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55">
-                  {viewMeta.subtitle}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <StatBadge label="Jami" value={notes.length} />
-                <StatBadge label="Ko'rinyapti" value={filteredNotes.length} />
-                <StatBadge label="Rejim" value={layoutMode === "grid" ? "Grid" : "List"} />
-                <StatBadge label="Status" value={loadingNotes ? "Yuklanmoqda" : "Tayyor"} />
-              </div>
+            <div className="mb-6">
+              <p className="text-xs uppercase tracking-[0.45em] text-[#FFA500]">
+                Workspace
+              </p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-[#E0E0E0]">
+                {viewMeta.label}
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55">
+                {viewMeta.subtitle}
+              </p>
             </div>
 
             {notesError ? (
@@ -785,6 +777,30 @@ export default function Home() {
               </div>
             )}
           </section>
+
+          <footer className="border-t border-white/5 px-4 py-3 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-white/35">
+              <span>
+                Jami <span className="text-white/55">{notes.length}</span>
+              </span>
+              <span>
+                Ko'rinyapti{" "}
+                <span className="text-white/55">{filteredNotes.length}</span>
+              </span>
+              <span>
+                Rejim{" "}
+                <span className="text-white/55">
+                  {layoutMode === "grid" ? "Grid" : "List"}
+                </span>
+              </span>
+              <span>
+                Status{" "}
+                <span className="text-white/55">
+                  {loadingNotes ? "Yuklanmoqda" : "Tayyor"}
+                </span>
+              </span>
+            </div>
+          </footer>
         </div>
       </div>
 
@@ -796,17 +812,17 @@ export default function Home() {
       >
         <DialogContent
           hideClose
-          className="w-[92vw] max-w-4xl overflow-visible border-none bg-transparent p-0 shadow-none sm:w-full"
+          className="w-[94vw] max-w-6xl overflow-visible border-none bg-transparent p-0 shadow-none sm:w-full"
         >
           <form
             onSubmit={(event) => {
               event.preventDefault();
               void saveNote();
             }}
-            className="grid max-h-[90vh] gap-4 overflow-y-auto lg:grid-cols-[1.2fr_0.8fr] lg:overflow-visible"
+            className="grid max-h-[94vh] gap-5 overflow-y-auto lg:grid-cols-[1.55fr_0.85fr] lg:overflow-visible lg:items-start"
           >
             {/* Asosiy karta: sarlavha, matn va amallar */}
-            <div className="flex flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#121212] shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:rounded-[32px]">
+            <div className="flex min-h-[560px] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#121212] shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:rounded-[32px]">
               <div className="flex items-center justify-between border-b border-white/5 px-5 py-4 sm:px-6">
                 <div>
                   <p className="text-xs uppercase tracking-[0.45em] text-[#FFA500]">
@@ -824,7 +840,7 @@ export default function Home() {
                 </DialogClose>
               </div>
 
-              <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
+              <div className="flex flex-1 flex-col space-y-5 px-5 py-5 sm:px-6 sm:py-6">
                 {composerError ? (
                   <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                     {composerError}
@@ -848,11 +864,12 @@ export default function Home() {
                   />
                 </label>
 
-                <label className="block">
+                <label className="flex flex-1 flex-col">
                   <span className="mb-2 block text-sm text-white/65">
                     Matn
                   </span>
                   <Textarea
+                    ref={contentInputRef}
                     value={formData.content}
                     onChange={(event) =>
                       setFormData((current) => ({
@@ -860,7 +877,8 @@ export default function Home() {
                         content: event.target.value,
                       }))
                     }
-                    rows={11}
+                    rows={16}
+                    className="flex-1 resize-none"
                     placeholder="Yozuvni shu yerga kiriting..."
                   />
                 </label>
@@ -880,9 +898,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Yon karta: rang tanlash, preview va maslahat */}
-            <div className="space-y-4 rounded-[28px] border border-white/10 bg-[#121212] p-4 shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:rounded-[32px]">
-              <div className="flex items-center gap-2 text-sm font-medium text-[#E0E0E0]">
+            {/* Yon karta: rang tanlash, preview va maslahat.
+                Tahrirlash oynasidan ajralib turishi uchun pastroqqa
+                suriladi va boshqacha fon/chegara bilan beriladi. */}
+            <div className="space-y-4 rounded-[28px] border border-[#FFA500]/20 bg-[#0a0a0a] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.6)] sm:rounded-[32px] lg:mt-20">
+              <div className="flex items-center gap-2 border-b border-white/5 pb-3 text-sm font-medium text-[#E0E0E0]">
                 <Palette className="h-4 w-4 text-[#FFA500]" />
                 Rang tanlash
               </div>
@@ -1057,19 +1077,3 @@ function AuthField({
   );
 }
 
-function StatBadge({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | string;
-}) {
-  return (
-    <div className="min-w-[110px] rounded-[22px] border border-white/8 bg-[#121212] px-4 py-3">
-      <p className="text-[10px] uppercase tracking-[0.35em] text-white/35">
-        {label}
-      </p>
-      <p className="mt-2 text-sm font-semibold text-[#E0E0E0]">{value}</p>
-    </div>
-  );
-}
