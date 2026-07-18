@@ -16,6 +16,7 @@ import {
   Sparkles,
   Trash2,
   User,
+  X,
 } from "lucide-react";
 import { NoteCard, Note } from "@/components/NoteCard";
 import { Button } from "@/components/ui/button";
@@ -23,9 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -794,137 +794,79 @@ export default function Home() {
           if (!open) closeComposer();
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent
+          hideClose
+          className="w-[92vw] max-w-4xl overflow-visible border-none bg-transparent p-0 shadow-none sm:w-full"
+        >
           <form
             onSubmit={(event) => {
               event.preventDefault();
               void saveNote();
             }}
+            className="grid max-h-[90vh] gap-4 overflow-y-auto lg:grid-cols-[1.2fr_0.8fr] lg:overflow-visible"
           >
-            <DialogHeader>
-              <div>
-                <p className="text-xs uppercase tracking-[0.45em] text-[#FFA500]">
-                  Composer
-                </p>
-                <DialogTitle className="mt-2">
-                  {editingId ? "Yozuvni tahrirlash" : "Yangi yozuv"}
-                </DialogTitle>
+            {/* Asosiy karta: sarlavha, matn va amallar */}
+            <div className="flex flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#121212] shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:rounded-[32px]">
+              <div className="flex items-center justify-between border-b border-white/5 px-5 py-4 sm:px-6">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.45em] text-[#FFA500]">
+                    Composer
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-[#E0E0E0]">
+                    {editingId ? "Yozuvni tahrirlash" : "Yangi yozuv"}
+                  </h2>
+                </div>
+                <DialogClose
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-[#2C2C2C] text-[#E0E0E0] transition hover:bg-white/10 focus:outline-none"
+                  aria-label="Yopish"
+                >
+                  <X className="h-5 w-5" />
+                </DialogClose>
               </div>
-            </DialogHeader>
 
-            <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
-              {composerError ? (
-                <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                  {composerError}
-                </div>
-              ) : null}
-
-              <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="space-y-4">
-                  <label className="block">
-                    <span className="mb-2 block text-sm text-white/65">
-                      Sarlavha
-                    </span>
-                    <Input
-                      ref={titleInputRef}
-                      value={formData.title}
-                      onChange={(event) =>
-                        setFormData((current) => ({
-                          ...current,
-                          title: event.target.value,
-                        }))
-                      }
-                      placeholder="Masalan: Kundalik reja"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm text-white/65">Matn</span>
-                    <Textarea
-                      value={formData.content}
-                      onChange={(event) =>
-                        setFormData((current) => ({
-                          ...current,
-                          content: event.target.value,
-                        }))
-                      }
-                      rows={11}
-                      placeholder="Yozuvni shu yerga kiriting..."
-                    />
-                  </label>
-                </div>
-
-                <div className="space-y-4 rounded-[28px] border border-white/8 bg-[#0f0f0f] p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-[#E0E0E0]">
-                    <Palette className="h-4 w-4 text-[#FFA500]" />
-                    Rang tanlash
+              <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
+                {composerError ? (
+                  <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    {composerError}
                   </div>
+                ) : null}
 
-                  <div className="grid grid-cols-3 gap-3">
-                    {NOTE_COLORS.map((color) => {
-                      const selected = formData.color === color.value;
+                <label className="block">
+                  <span className="mb-2 block text-sm text-white/65">
+                    Sarlavha
+                  </span>
+                  <Input
+                    ref={titleInputRef}
+                    value={formData.title}
+                    onChange={(event) =>
+                      setFormData((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    placeholder="Masalan: Kundalik reja"
+                  />
+                </label>
 
-                      return (
-                        <button
-                          key={color.value}
-                          type="button"
-                          title={color.name}
-                          onClick={() =>
-                            setFormData((current) => ({
-                              ...current,
-                              color: color.value,
-                            }))
-                          }
-                          className={`relative h-16 rounded-2xl border transition ${
-                            selected
-                              ? "border-[#FFA500] ring-2 ring-[#FFA500]/40"
-                              : "border-white/10 hover:border-white/20"
-                          }`}
-                          style={{ backgroundColor: color.value }}
-                        >
-                          {selected ? (
-                            <span className="absolute inset-0 rounded-2xl bg-black/10" />
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="rounded-[24px] border border-white/8 bg-[#121212] p-4">
-                    <p className="text-xs uppercase tracking-[0.35em] text-white/35">
-                      Preview
-                    </p>
-                    <div
-                      className="mt-3 rounded-[24px] border border-white/10 p-4"
-                      style={{ backgroundColor: formData.color }}
-                    >
-                      <div className="h-1.5 w-12 rounded-full bg-[#2196F3]" />
-                      <p className="mt-4 text-sm font-semibold" style={{ color: "#121212" }}>
-                        {formData.title.trim() || "Yangi note"}
-                      </p>
-                      <p className="mt-2 text-sm leading-7" style={{ color: "#121212" }}>
-                        {formData.content.trim() || "Matn yozib ko'ring. Saqlashdan oldin rangni ham o'zgartirishingiz mumkin."}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[24px] border border-white/8 bg-[#121212] p-4 text-sm leading-7 text-white/55">
-                    <p className="font-medium text-[#E0E0E0]">Qisqa maslahat</p>
-                    <p className="mt-2">
-                      Ctrl/Cmd + Enter bilan saqlash mumkin. Esc esa
-                      oynani yopadi.
-                    </p>
-                  </div>
-                </div>
+                <label className="block">
+                  <span className="mb-2 block text-sm text-white/65">
+                    Matn
+                  </span>
+                  <Textarea
+                    value={formData.content}
+                    onChange={(event) =>
+                      setFormData((current) => ({
+                        ...current,
+                        content: event.target.value,
+                      }))
+                    }
+                    rows={11}
+                    placeholder="Yozuvni shu yerga kiriting..."
+                  />
+                </label>
               </div>
-            </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/5 px-5 py-4 sm:px-6">
-              <p className="text-sm text-white/45">
-                Rangli notes, tez saqlash va oddiy boshqaruv.
-              </p>
-
-              <div className="flex items-center gap-3">
+              <div className="mt-auto flex flex-wrap items-center justify-end gap-3 border-t border-white/5 px-5 py-4 sm:px-6">
                 <Button type="button" variant="outline" onClick={closeComposer}>
                   Bekor qilish
                 </Button>
@@ -935,6 +877,70 @@ export default function Home() {
                       ? "Yangilash"
                       : "Saqlash"}
                 </Button>
+              </div>
+            </div>
+
+            {/* Yon karta: rang tanlash, preview va maslahat */}
+            <div className="space-y-4 rounded-[28px] border border-white/10 bg-[#121212] p-4 shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:rounded-[32px]">
+              <div className="flex items-center gap-2 text-sm font-medium text-[#E0E0E0]">
+                <Palette className="h-4 w-4 text-[#FFA500]" />
+                Rang tanlash
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                {NOTE_COLORS.map((color) => {
+                  const selected = formData.color === color.value;
+
+                  return (
+                    <button
+                      key={color.value}
+                      type="button"
+                      title={color.name}
+                      onClick={() =>
+                        setFormData((current) => ({
+                          ...current,
+                          color: color.value,
+                        }))
+                      }
+                      className={`relative h-16 rounded-2xl border transition ${
+                        selected
+                          ? "border-[#FFA500] ring-2 ring-[#FFA500]/40"
+                          : "border-white/10 hover:border-white/20"
+                      }`}
+                      style={{ backgroundColor: color.value }}
+                    >
+                      {selected ? (
+                        <span className="absolute inset-0 rounded-2xl bg-black/10" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-[24px] border border-white/8 bg-[#0f0f0f] p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-white/35">
+                  Preview
+                </p>
+                <div
+                  className="mt-3 rounded-[24px] border border-white/10 p-4"
+                  style={{ backgroundColor: formData.color }}
+                >
+                  <div className="h-1.5 w-12 rounded-full bg-[#2196F3]" />
+                  <p className="mt-4 text-sm font-semibold" style={{ color: "#121212" }}>
+                    {formData.title.trim() || "Yangi note"}
+                  </p>
+                  <p className="mt-2 text-sm leading-7" style={{ color: "#121212" }}>
+                    {formData.content.trim() || "Matn yozib ko'ring. Saqlashdan oldin rangni ham o'zgartirishingiz mumkin."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-white/8 bg-[#0f0f0f] p-4 text-sm leading-7 text-white/55">
+                <p className="font-medium text-[#E0E0E0]">Qisqa maslahat</p>
+                <p className="mt-2">
+                  Ctrl/Cmd + Enter bilan saqlash mumkin. Esc esa
+                  oynani yopadi.
+                </p>
               </div>
             </div>
           </form>
